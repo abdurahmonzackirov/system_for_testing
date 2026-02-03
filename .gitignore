@@ -1,4 +1,5 @@
 .env
+response to AI.txt
 .venv/
 __pycache__/
 *.pyc
