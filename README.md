@@ -219,7 +219,7 @@ python fill_db_with_tests.py
 ## 📞 Поддержка
 
 Есть вопросы или нашли ошибку? 
-- 📧 Email: [ваш email]
+- 📧 Email: cobrahawk1@icloud.com
 - 🐛 Issues: [GitHub Issues](https://github.com/yourusername/education-testing-bot/issues)
 
 ---
@@ -253,3 +253,4 @@ python fill_db_with_tests.py
 ---
 
 **Последнее обновление:** 3 февраля 2026 г.
+
