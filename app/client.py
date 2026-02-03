@@ -3,6 +3,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from datetime import datetime
 
 import app.database.requests as rq
 import app.keyboards as kb
@@ -23,6 +24,8 @@ class NavigationStates(StatesGroup):
 
 @client.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
+    now = datetime.now()
+    print(f"User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {message.text}")
     is_user = await rq.set_user(message.from_user.id)
     
     if not is_user:
@@ -48,6 +51,8 @@ async def cmd_start(message: Message, state: FSMContext):
 
 @client.message(StateFilter('reg_name'))
 async def reg_name(message: Message, state: FSMContext):
+    now = datetime.now()
+    print(f"User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {message.text}")
     await state.update_data(name=message.text.capitalize())
     data = await state.get_data()
     await rq.update_user(tg_id=message.from_user.id, name=data['name'])
@@ -61,16 +66,189 @@ async def reg_name(message: Message, state: FSMContext):
 
 @client.message(F.text == 'Химия')
 async def chemistry_subject(message: Message):
+    now = datetime.now()
+    print(f"User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {message.text}")
     await message.answer('Выберите тему по Химии', reply_markup=await kb.get_themes_kb(subject_id=1))
 
 
 @client.message(F.text == 'Математика')
 async def math_subject(message: Message):
+    now = datetime.now()
+    print(f"User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {message.text}")
     await message.answer('Выберите тему по Математике', reply_markup=await kb.get_themes_kb(subject_id=2))
+
+
+@client.message(F.text == '📚 Выбрать предмет')
+async def choose_subject(message: Message, state: FSMContext):
+    now = datetime.now()
+    print(f"User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {message.text}")
+    await state.set_state(NavigationStates.choosing_subject_for_study)
+    await message.answer('Выберите предмет для изучения:', reply_markup=await kb.get_subjects_kb())
+
+
+@client.message(F.text == '← Назад')
+async def go_back(message: Message, state: FSMContext):
+    now = datetime.now()
+    print(f"User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {message.text}")
+    current_state = await state.get_state()
+    
+    if current_state == NavigationStates.choosing_subject_for_study:
+        await state.set_state(NavigationStates.main_menu)
+        await message.answer(
+            '👈 Вы вернулись в главное меню.\n\nВыберите действие:',
+            reply_markup=kb.main_menu_kb
+        )
+
+
+@client.message(F.text == '📖 Изучить темы')
+async def study_themes(message: Message, state: FSMContext):
+    now = datetime.now()
+    print(f"User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {message.text}")
+    await state.set_state(NavigationStates.choosing_subject_for_study)
+    await message.answer(
+        '📖 Выберите предмет для изучения тем:',
+        reply_markup=await kb.choose_study_subj()
+    )
+
+
+@client.message(F.text == '✏️ Сдать тест')
+async def pass_test(message: Message, state: FSMContext):
+    now = datetime.now()
+    print(f"User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {message.text}")
+    await state.set_state(NavigationStates.choosing_subject_for_test)
+    await message.answer('✏️ Выберите предмет для прохождения теста:', reply_markup=await kb.choose_test_subj())
+
+
+@client.message(F.text == '📊 Моя статистика')
+async def my_statistics(message: Message):
+    now = datetime.now()
+    print(f"User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {message.text}")
+    user = await rq.get_user(tg_id=message.from_user.id)
+    total_mark = user.total_mark or 0
+    
+    stats = (
+        f'📊 ВАША СТАТИСТИКА\n'
+        f'━━━━━━━━━━━━━━━━━━━━━━\n\n'
+        f'Общий балл: {total_mark} баллов\n\n'
+        f'По предметам:\n'
+    )
+    
+    # Получаем все предметы и показываем баллы по каждому
+    subjects = await rq.get_subjects()
+    marks_by_subject = {}
+    if user.marks_by_subject:
+        marks_by_subject = json.loads(user.marks_by_subject)
+    
+    if subjects:
+        for subject in subjects:
+            subject_mark = int(marks_by_subject.get(str(subject.id), 0))
+            subject_tests = subject_mark // 10 if subject_mark > 0 else 0
+            stats += f'• {subject.name}: {subject_mark} баллов ({subject_tests} тестов)\n'
+    else:
+        stats += '📚 Нет предметов в системе\n'
+    
+    await message.answer(stats)
+
+
+@client.message(F.text == '🎯 Слабые места')
+async def weak_places(message: Message):
+    now = datetime.now()
+    print(f"User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {message.text}")
+    user = await rq.get_user(tg_id=message.from_user.id)
+    
+    if not user.errors_by_theme:
+        await message.answer(
+            '✅ Отлично! У вас пока нет слабых мест.\n'
+            'Продолжайте решать тесты, чтобы система могла анализировать ваш прогресс.'
+        )
+        return
+    
+    errors = json.loads(user.errors_by_theme)
+    if not errors:
+        await message.answer(
+            '✅ Отлично! У вас пока нет слабых мест.\n'
+            'Продолжайте решать тесты, чтобы система могла анализировать ваш прогресс.'
+        )
+        return
+    
+    weak_text = '🎯 ВАШИ СЛАБЫЕ МЕСТА\n━━━━━━━━━━━━━━━━━━━━━━\n\n'
+    sorted_errors = sorted(errors.items(), key=lambda x: int(x[1]), reverse=True)
+    
+    for theme_id_str, error_count in sorted_errors[:5]:
+        try:
+            theme = await rq.get_theme(int(theme_id_str))
+            weak_text += f'• {theme.name}: {error_count} ошибок\n'
+        except:
+            pass
+    
+    weak_text += '\n💡 Рекомендация: Повторите эти темы в разделе "Изучить темы"'
+    await message.answer(weak_text)
+
+
+@client.message(F.text == '⭐ Мой рейтинг')
+async def my_rating(message: Message):
+    now = datetime.now()
+    print(f"User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {message.text}")
+    user = await rq.get_user(tg_id=message.from_user.id)
+    mark = user.total_mark or 0
+    
+    # Определяем уровень пользователя
+    if mark < 50:
+        level = '🔴 Начинающий'
+        progress = f'{mark}/100'
+    elif mark < 150:
+        level = '🟡 Практикант'
+        progress = f'{mark}/200'
+    elif mark < 300:
+        level = '🟢 Учащийся'
+        progress = f'{mark}/300'
+    elif mark < 500:
+        level = '🔵 Отличник'
+        progress = f'{mark}/500'
+    else:
+        level = '⭐ Мастер'
+        progress = f'{mark}/500+'
+    
+    rating_text = (
+        f'⭐ ВАШ РЕЙТИНГ\n'
+        f'━━━━━━━━━━━━━━━━━━━━━━\n\n'
+        f'Уровень: {level}\n'
+        f'Баллов: {progress}\n\n'
+        f'Совет: Решайте больше тестов, чтобы увеличить свой рейтинг!'
+    )
+    await message.answer(rating_text)
+
+
+@client.message(F.text == 'Моя успеваемость')
+async def study(message: Message):
+    now = datetime.now()
+    print(f"User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {message.text}")
+    user = await rq.get_user(tg_id=message.from_user.id)
+    mark = user.total_mark or 0
+    chemistry_mark = user.mark_for_chemistry or 0
+    math_mark = user.mark_for_math or 0
+    
+    await message.answer(
+        f'📈 ВАША УСПЕВАЕМОСТЬ\n\n'
+        f'Общий балл: {mark}\n'
+        f'Балл по химии: {chemistry_mark}\n'
+        f'Балл по математике: {math_mark}'
+    )
+    
+    if chemistry_mark <= 26 and math_mark <= 26:
+        await message.answer("❌ Вам нужно подтянуть химию и математику, побольше читайте темы")
+    elif math_mark <= 26:
+        await message.answer('❌ Вам нужно подтянуть математику, побольше учите формулы (особенно связанные с тригонометрией)')
+    elif chemistry_mark <= 26:
+        await message.answer('❌ Вам нужно подтянуть химию, побольше учите про электроны (особенно конфигурацию)')
+    else:
+        await message.answer('✅ Вау, у вас со всеми предметами всё отлично, вы прям гений!)')
 
 
 @client.callback_query(F.data.startswith('theme_'))
 async def themes(callback: CallbackQuery, state: FSMContext):
+    now = datetime.now()
+    print(f"User {callback.from_user.first_name}({callback.from_user.id}) send callback at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {callback.data}")
     await callback.answer()
     await state.set_state(NavigationStates.viewing_theme)
     theme_id = callback.data.split('_')[1]
@@ -91,50 +269,21 @@ async def themes(callback: CallbackQuery, state: FSMContext):
 @client.callback_query(F.data.startswith('study_subject_'))
 async def study_subject(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
+    now = datetime.now()
+    print(f"User {callback.from_user.first_name}({callback.from_user.id}) send callback at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {callback.data}")
     subject_id = int(callback.data.split('_')[2])
     await state.update_data(studying_subject_id=subject_id)
     await callback.message.answer(
         f'📖 Выберите тему для изучения:',
         reply_markup=await kb.get_themes_kb(subject_id=subject_id)
     )
-    
-
-@client.message(F.text == '📚 Выбрать предмет')
-async def choose_subject(message: Message, state: FSMContext):
-    await state.set_state(NavigationStates.choosing_subject_for_study)
-    await message.answer('Выберите предмет для изучения:', reply_markup=await kb.get_subjects_kb())
-
-
-@client.message(F.text == '← Назад')
-async def go_back(message: Message, state: FSMContext):
-    current_state = await state.get_state()
-    
-    if current_state == NavigationStates.choosing_subject_for_study:
-        await state.set_state(NavigationStates.main_menu)
-        await message.answer(
-            '👈 Вы вернулись в главное меню.\n\nВыберите действие:',
-            reply_markup=kb.main_menu_kb
-        )
-
-
-@client.message(F.text == '📖 Изучить темы')
-async def study_themes(message: Message, state: FSMContext):
-    await state.set_state(NavigationStates.choosing_subject_for_study)
-    await message.answer(
-        '📖 Выберите предмет для изучения тем:',
-        reply_markup=await kb.choose_study_subj()
-    )
-
-
-@client.message(F.text == '✏️ Сдать тест')
-async def pass_test(message: Message, state: FSMContext):
-    await state.set_state(NavigationStates.choosing_subject_for_test)
-    await message.answer('✏️ Выберите предмет для прохождения теста:', reply_markup=await kb.choose_test_subj())
 
 
 @client.callback_query(F.data.startswith('subject_'))
 async def start_test(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
+    now = datetime.now()
+    print(f"User {callback.from_user.first_name}({callback.from_user.id}) send callback at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {callback.data}")
     subject_id = int(callback.data.split('_')[1])
     
     # Получаем все тесты по предмету
@@ -281,21 +430,29 @@ async def show_test_results(callback: CallbackQuery, state: FSMContext):
 
 @client.callback_query(F.data == 'a')
 async def check_answer_a(callback: CallbackQuery, state: FSMContext):
+    now = datetime.now()
+    print(f"User {callback.from_user.first_name}({callback.from_user.id}) send callback at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {callback.data}")
     await process_answer(callback, state, 'А')
 
 
 @client.callback_query(F.data == 'b')
 async def check_answer_b(callback: CallbackQuery, state: FSMContext):
+    now = datetime.now()
+    print(f"User {callback.from_user.first_name}({callback.from_user.id}) send callback at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {callback.data}")
     await process_answer(callback, state, 'Б')
 
 
 @client.callback_query(F.data == 'c')
 async def check_answer_c(callback: CallbackQuery, state: FSMContext):
+    now = datetime.now()
+    print(f"User {callback.from_user.first_name}({callback.from_user.id}) send callback at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {callback.data}")
     await process_answer(callback, state, 'В')
 
 
 @client.callback_query(F.data == 'd')
 async def check_answer_d(callback: CallbackQuery, state: FSMContext):
+    now = datetime.now()
+    print(f"User {callback.from_user.first_name}({callback.from_user.id}) send callback at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {callback.data}")
     await process_answer(callback, state, 'Г')
 
 
@@ -342,6 +499,8 @@ async def process_answer(callback: CallbackQuery, state: FSMContext, answer: str
 @client.callback_query(F.data.startswith('weak_theme_'))
 async def start_weak_theme_test(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
+    now = datetime.now()
+    print(f"User {callback.from_user.first_name}({callback.from_user.id}) send callback at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {callback.data}")
     theme_id = int(callback.data.split('_')[2])
     
     # Получаем все тесты по этой теме
@@ -370,6 +529,8 @@ async def start_weak_theme_test(callback: CallbackQuery, state: FSMContext):
 @client.callback_query(F.data == 'skip_weak')
 async def skip_weak_test(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
+    now = datetime.now()
+    print(f"User {callback.from_user.first_name}({callback.from_user.id}) send callback at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {callback.data}")
     await callback.message.answer(
         '✅ Рекомендационный тест пропущен.\n\nВыберите действие:',
         reply_markup=kb.main_menu_kb
@@ -380,6 +541,8 @@ async def skip_weak_test(callback: CallbackQuery, state: FSMContext):
 @client.callback_query(F.data == 'back_to_menu')
 async def back_to_menu(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
+    now = datetime.now()
+    print(f"User {callback.from_user.first_name}({callback.from_user.id}) send callback at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {callback.data}")
     current_state = await state.get_state()
     
     # Если пользователь в просмотре темы - вернуться в выбор тем
@@ -427,6 +590,8 @@ async def back_to_menu(callback: CallbackQuery, state: FSMContext):
 @client.callback_query(F.data == 'finish_test')
 async def finish_test(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
+    now = datetime.now()
+    print(f"User {callback.from_user.first_name}({callback.from_user.id}) send callback at Дата: {now.strftime('%d.%m.%Y')}, Время: {now.strftime('%H:%M:%S')}: {callback.data}")
     current_state = await state.get_state()
     
     if current_state == NavigationStates.test_in_progress:
@@ -493,121 +658,3 @@ async def show_weak_test_results(callback: CallbackQuery, state: FSMContext):
     
     await callback.message.answer(result_text)
     await state.clear()
-
-
-@client.message(F.text == '📊 Моя статистика')
-async def my_statistics(message: Message):
-    user = await rq.get_user(tg_id=message.from_user.id)
-    total_mark = user.total_mark or 0
-    
-    stats = (
-        f'📊 ВАША СТАТИСТИКА\n'
-        f'━━━━━━━━━━━━━━━━━━━━━━\n\n'
-        f'Общий балл: {total_mark} баллов\n\n'
-        f'По предметам:\n'
-    )
-    
-    # Получаем все предметы и показываем баллы по каждому
-    subjects = await rq.get_subjects()
-    marks_by_subject = {}
-    if user.marks_by_subject:
-        marks_by_subject = json.loads(user.marks_by_subject)
-    
-    if subjects:
-        for subject in subjects:
-            subject_mark = int(marks_by_subject.get(str(subject.id), 0))
-            subject_tests = subject_mark // 10 if subject_mark > 0 else 0
-            stats += f'• {subject.name}: {subject_mark} баллов ({subject_tests} тестов)\n'
-    else:
-        stats += '📚 Нет предметов в системе\n'
-    
-    await message.answer(stats)
-
-
-@client.message(F.text == '🎯 Слабые места')
-async def weak_places(message: Message):
-    user = await rq.get_user(tg_id=message.from_user.id)
-    
-    if not user.errors_by_theme:
-        await message.answer(
-            '✅ Отлично! У вас пока нет слабых мест.\n'
-            'Продолжайте решать тесты, чтобы система могла анализировать ваш прогресс.'
-        )
-        return
-    
-    errors = json.loads(user.errors_by_theme)
-    if not errors:
-        await message.answer(
-            '✅ Отлично! У вас пока нет слабых мест.\n'
-            'Продолжайте решать тесты, чтобы система могла анализировать ваш прогресс.'
-        )
-        return
-    
-    weak_text = '🎯 ВАШИ СЛАБЫЕ МЕСТА\n━━━━━━━━━━━━━━━━━━━━━━\n\n'
-    sorted_errors = sorted(errors.items(), key=lambda x: int(x[1]), reverse=True)
-    
-    for theme_id_str, error_count in sorted_errors[:5]:
-        try:
-            theme = await rq.get_theme(int(theme_id_str))
-            weak_text += f'• {theme.name}: {error_count} ошибок\n'
-        except:
-            pass
-    
-    weak_text += '\n💡 Рекомендация: Повторите эти темы в разделе "Изучить темы"'
-    await message.answer(weak_text)
-
-
-@client.message(F.text == '⭐ Мой рейтинг')
-async def my_rating(message: Message):
-    user = await rq.get_user(tg_id=message.from_user.id)
-    mark = user.total_mark or 0
-    
-    # Определяем уровень пользователя
-    if mark < 50:
-        level = '🔴 Начинающий'
-        progress = f'{mark}/100'
-    elif mark < 150:
-        level = '🟡 Практикант'
-        progress = f'{mark}/200'
-    elif mark < 300:
-        level = '🟢 Учащийся'
-        progress = f'{mark}/300'
-    elif mark < 500:
-        level = '🔵 Отличник'
-        progress = f'{mark}/500'
-    else:
-        level = '⭐ Мастер'
-        progress = f'{mark}/500+'
-    
-    rating_text = (
-        f'⭐ ВАШ РЕЙТИНГ\n'
-        f'━━━━━━━━━━━━━━━━━━━━━━\n\n'
-        f'Уровень: {level}\n'
-        f'Баллов: {progress}\n\n'
-        f'Совет: Решайте больше тестов, чтобы увеличить свой рейтинг!'
-    )
-    await message.answer(rating_text)
-
-
-@client.message(F.text == 'Моя успеваемость')
-async def study(message: Message):
-    user = await rq.get_user(tg_id=message.from_user.id)
-    mark = user.total_mark or 0
-    chemistry_mark = user.mark_for_chemistry or 0
-    math_mark = user.mark_for_math or 0
-    
-    await message.answer(
-        f'📈 ВАША УСПЕВАЕМОСТЬ\n\n'
-        f'Общий балл: {mark}\n'
-        f'Балл по химии: {chemistry_mark}\n'
-        f'Балл по математике: {math_mark}'
-    )
-    
-    if chemistry_mark <= 26 and math_mark <= 26:
-        await message.answer("❌ Вам нужно подтянуть химию и математику, побольше читайте темы")
-    elif math_mark <= 26:
-        await message.answer('❌ Вам нужно подтянуть математику, побольше учите формулы (особенно связанные с тригонометрией)')
-    elif chemistry_mark <= 26:
-        await message.answer('❌ Вам нужно подтянуть химию, побольше учите про электроны (особенно конфигурацию)')
-    else:
-        await message.answer('✅ Вау, у вас со всеми предметами всё отлично, вы прям гений!)')

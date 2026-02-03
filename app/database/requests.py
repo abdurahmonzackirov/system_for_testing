@@ -111,7 +111,7 @@ async def get_tests(session):
 
 
 @connection
-async def get_tests(session, theme_id):
+async def get_tests_by_theme_id(session, theme_id):
     return await session.scalars(select(Test).where(Test.theme_id == theme_id))
 
 

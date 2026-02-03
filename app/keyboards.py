@@ -19,13 +19,20 @@ answers = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 
+# Добавьте эту обновлённую клавиатуру в ваш файл app/keyboards.py
+
+# Добавьте эту обновлённую клавиатуру в ваш файл app/keyboards.py
+
 admin_kb = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='📚 Добавить предмет'),
      KeyboardButton(text='🗑️ Удалить предмет')],
+    [KeyboardButton(text='📁 Импорт предметов')],  # НОВАЯ КНОПКА
     [KeyboardButton(text='📖 Добавить тему'),
      KeyboardButton(text='🗑️ Удалить тему')],
+    [KeyboardButton(text='📁 Импорт тем')],  # НОВАЯ КНОПКА
     [KeyboardButton(text='❓ Добавить вопрос'),
      KeyboardButton(text='🗑️ Удалить вопрос')],
+    [KeyboardButton(text='📁 Импорт вопросов')],  # НОВАЯ КНОПКА
     [KeyboardButton(text='👤 Добавить администратора'),
      KeyboardButton(text='❌ Удалить администратора')]
 ],
@@ -122,7 +129,7 @@ async def get_themes_by_subject(subject_id):
 
 async def tests_by_theme(theme_id):
     keyboard = InlineKeyboardBuilder()
-    tests = await rq.get_tests(theme_id)
+    tests = await rq.get_tests_by_theme_id(theme_id)
     for test in tests:
         keyboard.add(InlineKeyboardButton(text=test.name, callback_data='empty_data'))
     return keyboard.adjust(1).as_markup()
@@ -168,4 +175,22 @@ async def themes_id():
     themes = await rq.get_themes()
     for theme in themes:
         keyboard.add(InlineKeyboardButton(text=theme.name, callback_data=f'theme_{theme.id}'))
+    return keyboard.adjust(2).as_markup()
+
+
+async def get_tests():
+    """Клавиатура для выбора теста (админ-панель)"""
+    keyboard = InlineKeyboardBuilder()
+    tests = await rq.get_tests()
+    for test in tests:
+        keyboard.add(InlineKeyboardButton(text=test.name, callback_data=f'empty_data'))
+    return keyboard.adjust(2).as_markup()
+
+
+async def get_themes():
+    """Клавиатура для выбора темы (админ-панель)"""
+    keyboard = InlineKeyboardBuilder()
+    themes = await rq.get_themes()
+    for theme in themes:
+        keyboard.add(InlineKeyboardButton(text=theme.name, callback_data=f'empty_data'))
     return keyboard.adjust(2).as_markup()

@@ -1,32 +1,14 @@
-receipt_number = 0
-items_count = 0
-total_price = 0
-
-
-def add_item(item_name, item_price):
-    global items_count
-    items_count += 1
-    global total_price
-    total_price += item_price
-
-def print_receipt():
-    global receipt_number
-    receipt_number += 1
-    global items_count
-    global total_price
-    print(f'Чек {receipt_number} Всего предметов: {items_count}\n{item_name} - {item_price}\nИтого: {total_price} руб.\n')
+def quarters(*data):
+    result = {'I': 0, 'II': 0, 'III': 0, 'IV': 0}
     
-add_item('Блокнот', 100)
-print_receipt()
-
-add_item('Ручка', 70)
-print_receipt()
-print_receipt()
-
-add_item('Булочка', 15)
-add_item('Булочка', 15)
-add_item('Чай', 5)
-print_receipt()
-
-add_item('Булочка', 15)
-add_item('Булочка', 15)
+    for x, y in data:
+        if x > 0 and y > 0:
+            result['I'] += 1
+        elif x < 0 and y > 0:
+            result['II'] += 1
+        elif x < 0 and y < 0:
+            result['III'] += 1
+        elif x > 0 and y < 0:
+            result['IV'] += 1
+    
+    return result
