@@ -10,3 +10,4 @@ yandex.db
 node_modules/
 .vscode/
 .idea/
+recreate_tests_table.py

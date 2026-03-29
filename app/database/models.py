@@ -64,12 +64,12 @@ class Test(Base):
     subject_id: Mapped[int] = mapped_column(ForeignKey('subjects.id'))
     name: Mapped[str] = mapped_column(String(100), nullable=True)
     question: Mapped[str] = mapped_column(String(520), nullable=True)
-    answer1: Mapped[str] = mapped_column(String(20), nullable=True)
-    answer2: Mapped[str] = mapped_column(String(20), nullable=True)
-    answer3: Mapped[str] = mapped_column(String(20), nullable=True)
-    answer4: Mapped[str] = mapped_column(String(20), nullable=True)
+    answer1: Mapped[str] = mapped_column(String(100), nullable=True)
+    answer2: Mapped[str] = mapped_column(String(100), nullable=True)
+    answer3: Mapped[str] = mapped_column(String(100), nullable=True)
+    answer4: Mapped[str] = mapped_column(String(100), nullable=True)
     point: Mapped[int] = mapped_column(nullable=True)
-    correct_answer: Mapped[str] = mapped_column(String(20), nullable=True)
+    correct_answer: Mapped[str] = mapped_column(String(100), nullable=True)
     
 
 async def init_models():
