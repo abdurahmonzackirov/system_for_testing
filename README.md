@@ -39,7 +39,7 @@ pip
 
 1. **Клонируйте репозиторий:**
 ```bash
-git clone https://github.com/abdurahmonzackirov/system-for-testing.git
+git clone https://github.com/abdurahmonzackirov/system_for_testing
 cd education-testing-bot
 ```
 
