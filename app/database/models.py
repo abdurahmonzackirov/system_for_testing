@@ -1,9 +1,16 @@
+import os
+
+from dotenv import load_dotenv
+
 from sqlalchemy import ForeignKey, BigInteger, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs
 
+load_dotenv()
 
-engine = create_async_engine(url='postgresql+asyncpg://postgres:admin@127.0.0.1:5432/doppibot', echo=True)
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+engine = create_async_engine(url=DATABASE_URL, echo=True)
 async_session = async_sessionmaker(engine)
 
 
