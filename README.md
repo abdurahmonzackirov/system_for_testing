@@ -221,7 +221,7 @@ python fill_db_with_tests.py
 
 Есть вопросы или нашли ошибку? 
 - 📧 Email: cobrahawk1@icloud.com
-- 🐛 Issues: [GitHub Issues](https://github.com/yourusername/education-testing-bot/issues)
+- 🐛 Issues: [GitHub Issues](https://github.com/abdurahmonzackirov/system_for_testing/issues)
 
 ---
 
@@ -233,7 +233,7 @@ python fill_db_with_tests.py
 
 ## 👨‍💻 Автор
 
-**Ваше имя** - [GitHub](https://github.com/yourusername) | [Telegram](https://t.me/yourusername)
+**Abdurahmon** - [GitHub](https://github.com/abdurahmonzackirov) | [Telegram](https://t.me/zokirovjavlon)
 
 ---
 
@@ -247,7 +247,7 @@ python fill_db_with_tests.py
 
 ### ⭐ Если проект вам нравится, поставьте звезду!
 
-![Stars](https://img.shields.io/github/stars/yourusername/education-testing-bot?style=social)
+![Stars](https://img.shields.io/github/stars/abdurahmonzackirov/system_for_testing?style=social)
 
 </div>
 
