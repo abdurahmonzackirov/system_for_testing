@@ -1,10 +1,12 @@
+import json
+import xlsxwriter
 from aiogram import Router, F, Bot
 from aiogram.filters import StateFilter, CommandStart, Command
 from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.fsm.context import FSMContext
 from datetime import datetime
 
-from app.custom_filters import AdminProtect, ADMINS
+from app.custom_filters import AdminProtect, DEFAULT_ADMINS
 
 import app.database.requests as rq
 import app.keyboards as kb
@@ -22,29 +24,44 @@ async def admin_start(message: Message):
     print(f'Admin {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime("%d.%m.%Y")}, Время: {now.strftime("%H:%M:%S")}: {message.text}')
     await message.answer("👋 Добро пожаловать, админ!", reply_markup=kb.admin_kb)
     
+
+@admin.message(Command('help'), AdminProtect())
+async def admin_help(message: Message):
+    now = datetime.now()
+    print(f'Admin {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime("%d.%m.%Y")}, Время: {now.strftime("%H:%M:%S")}: {message.text}')
+    await message.answer('📋 <b>ДОСТУПНЫЕ КОМАНДЫ:</b>\n\n/start - 🚀 Запуск бота\n/help - ℹ️ Команды бота\n/users_stats - 📊 Статистика пользователей\n/admins_stats - 🧑‍💼 Статистика администраторов', parse_mode='HTML')
+    
     
 @admin.message(F.text == '👤 Добавить администратора', AdminProtect())
 async def add_admin_handler(message: Message, state: FSMContext):
     now = datetime.now()
     print(f'Admin {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime("%d.%m.%Y")}, Время: {now.strftime("%H:%M:%S")}: {message.text}')
     await message.answer("👤 Введите Telegram ID нового администратора:")
-    await state.set_state('adding_admin')
+    await state.set_state('adding_admin_tg_id')
     
     
-@admin.message(StateFilter('adding_admin'), AdminProtect())
+@admin.message(StateFilter('adding_admin_tg_id'), AdminProtect())
 async def save_admin(message: Message, state: FSMContext):
     now = datetime.now()
     print(f'Admin {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime("%d.%m.%Y")}, Время: {now.strftime("%H:%M:%S")}: {message.text}')
-    tg_id = int(message.text)
+    await message.answer("👤 Введите имя нового администратора:")
+    await state.update_data(tg_id=int(message.text))
+    await state.set_state('adding_admin_name')
+
+@admin.message(StateFilter('adding_admin_name'), AdminProtect())
+async def save_admin_name(message: Message, state: FSMContext):
+    now = datetime.now()
+    print(f'Admin {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime("%d.%m.%Y")}, Время: {now.strftime("%H:%M:%S")}: {message.text}')
+    data = await state.get_data()
+    tg_id = data['tg_id']
+    name = message.text
     existing_admin = await rq.get_admin(tg_id)
     if existing_admin:
         await message.answer(f"⚠️ Пользователь с TG ID \"{tg_id}\" уже является администратором.")
     else:
-        await rq.add_admin(tg_id)
+        await rq.add_admin(tg_id=tg_id, name=name)
         await message.answer(f"✅ Пользователь с TG ID \"{tg_id}\" успешно добавлен в администраторы.")
-        ADMINS.append(tg_id)  # Обновляем список админов в памяти
     await state.clear()
-
 
 @admin.message(F.text == '❌ Удалить администратора', AdminProtect())
 async def delete_admin_handler(message: Message, state: FSMContext):
@@ -64,11 +81,13 @@ async def remove_admin(message: Message, state: FSMContext, bot: Bot):
     if not existing_admin:
         await message.answer(f"⚠️ Пользователь с TG ID \"{tg_id}\" не является администратором.")
     else:
-        await rq.delete_admin(tg_id)
-        await message.answer(f"✅ Пользователь с TG ID \"{tg_id}\" успешно удалён из администраторов.")
-        for admin in admins:
-            await bot.send_message(chat_id=admin.tg_id, text=f"⚠️ Администратор с TG ID \"{tg_id}\" был удалён из списка администраторов.")
-        ADMINS.remove(tg_id)  # Обновляем список админов в памяти
+        if tg_id in DEFAULT_ADMINS:
+            await message.answer(f"⚠️ Невозможно удалить администратора с ID \"{tg_id}\". Он является системным администратором.")
+        else:
+            await rq.delete_admin(tg_id)
+            await message.answer(f"✅ Пользователь с TG ID \"{tg_id}\" успешно удалён из администраторов.")
+            for admin in admins:
+                await bot.send_message(chat_id=admin.tg_id, text=f"⚠️ Администратор с TG ID \"{tg_id}\" был удалён из списка администраторов.")
     await state.clear()
 
 
@@ -384,6 +403,80 @@ async def remove_question(message: Message, state: FSMContext, bot: Bot):
     else:
         await message.answer(f"⚠️ Вопрос '{question_name}' не найден.")
     await state.clear()
+    
+    
+"""@admin.message(Command('users_stats'), AdminProtect())
+async def show_users_stats(message: Message):
+    now = datetime.now()
+    print(f'Admin {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime("%d.%m.%Y")}, Время: {now.strftime("%H:%M:%S")}: {message.text}')
+    await message.answer('👤 Выберите пользователя для просмотра статистики:', reply_markup=await kb.get_users_kb())"""
+    
+
+@admin.message(Command('admins_stats'), AdminProtect())
+async def show_admins_stats(message: Message):
+    now = datetime.now()
+    print(f'Admin {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime("%d.%m.%Y")}, Время: {now.strftime("%H:%M:%S")}: {message.text}')
+    admins = await rq.get_admins()
+    stats_message = "📊 <b>СТАТИСТИКА АДМИНИСТРАТОРОВ:</b>\n\n"
+    for admin in admins:
+        stats_message += f"👤 {admin.tg_id} - {admin.name}\n"
+    await message.answer(stats_message, parse_mode='HTML')
+
+
+"""@admin.callback_query(F.data.startswith('user_'), AdminProtect())
+async def show_user_stats(callback: CallbackQuery):
+    now = datetime.now()
+    print(f'Admin {callback.from_user.first_name}({callback.from_user.id}) send callback at Дата: {now.strftime("%d.%m.%Y")}, Время: {now.strftime("%H:%M:%S")}: {callback.data}')
+    tg_id = int(callback.data.split('_')[1])
+    user = await rq.get_user(tg_id)
+    errors = json.loads(user.errors_by_theme) if user.errors_by_theme else {}
+    if user:
+        stats = await rq.get_user_stats(tg_id)
+        stats_message = f"📊 Статистика пользователя <b>{user.name}</b> (TG ID: {user.tg_id}):\n\n"
+        stats_message += f"🎯 Всего баллов: <b>{stats['total_mark']}</b>\n"
+        stats_message += f'🪫 Слабые темы:\n'
+        weak_text = ''
+        sorted_errors = sorted(errors.items(), key=lambda x: int(x[1]), reverse=True)
+        for theme_id_str, error_count in sorted_errors[:5]:
+            try:
+                theme = await rq.get_theme(int(theme_id_str))
+                weak_text += f'\t• {theme.name}: {error_count} ошибок\n'
+            except:
+                pass
+        await callback.message.answer(stats_message + weak_text, parse_mode='HTML')
+    else:
+        await callback.message.answer("⚠️ Пользователь не найден.")
+    await callback.answer()"""
+    
+    
+@admin.message(Command('users_stats'), AdminProtect())
+async def create_users_stats_excel(message: Message):
+    now = datetime.now()
+    print(f'Admin {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime("%d.%m.%Y")}, Время: {now.strftime("%H:%M:%S")}: {message.text}')
+    users = await rq.get_users()
+    file_path = f"users_stats_{message.from_user.id}.xlsx"
+    
+    workbook = xlsxwriter.Workbook(file_path)
+    worksheet = workbook.add_worksheet("Users Stats")
+    
+    headers = ["TG ID", "Name", "Total Mark", "Errors by Theme"]
+    for col_num, header in enumerate(headers):
+        worksheet.write(0, col_num, header)
+    
+    for row_num, user in enumerate(users, start=1):
+        stats = await rq.get_user_stats(user.tg_id)
+        errors = json.loads(user.errors_by_theme) if user.errors_by_theme else {}
+        errors_str = "\n".join([f"Theme {theme_id}: {count} errors" for theme_id, count in errors.items()])
+        
+        worksheet.write(row_num, 0, user.tg_id)
+        worksheet.write(row_num, 1, user.name)
+        worksheet.write(row_num, 2, stats['total_mark'])
+        worksheet.write(row_num, 3, errors_str)
+    
+    workbook.close()
+    
+    await message.answer_document(FSInputFile(file_path), caption="📊 Статистика пользователей")
+    os.remove(file_path)
     
     
 # ===== ИМПОРТ ВОПРОСОВ =====

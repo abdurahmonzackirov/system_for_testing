@@ -27,6 +27,23 @@ async def get_user(session, tg_id):
 
 
 @connection
+async def get_user_stats(session, tg_id):
+    user = await session.scalar(select(User).where(User.tg_id == tg_id))
+    if user:
+        return {
+            'name': user.name,
+            'total_mark': user.total_mark,
+            'mark_for_chemistry': user.mark_for_chemistry,
+            'mark_for_math': user.mark_for_math,
+            'marks_by_subject': user.marks_by_subject,
+            'need_practice_subject': user.need_practice_subject,
+            'need_practice_theme': user.need_practice_theme,
+            'errors_by_theme': user.errors_by_theme
+        }
+    return None
+
+
+@connection
 async def get_admins(session):
     return await session.scalars(select(Admin))
 
@@ -37,8 +54,8 @@ async def get_admin(session, tg_id):
 
 
 @connection
-async def add_admin(session, tg_id):
-    await session.execute(insert(Admin).values(tg_id=tg_id))
+async def add_admin(session, tg_id, name):
+    await session.execute(insert(Admin).values(tg_id=tg_id, name=name))
     await session.commit()
     
     

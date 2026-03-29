@@ -1,10 +1,13 @@
-aiogram == 3.24.0
-sqlalchemy == 2.0.20
-aiosqlite == 0.18.0
-python-dotenv == 1.0.0
-asyncmy == 0.4.3
-redis == 4.5.1
-aioredis == 2.0.1
-greenlet == 2.0.1
-geopy == 2.0.0
-certifi == 2024.6.16
+aiogram==3.24.0
+sqlalchemy==2.0.20
+asyncpg==0.28.0
+aiosqlite==0.18.0
+python-dotenv==1.0.0
+pandas==2.1.4
+xlsxwriter==3.1.9
+asyncmy==0.2.11
+redis==4.5.1
+aioredis==2.0.1
+greenlet==2.0.1
+geopy==2.0.0
+certifi==2024.6.2

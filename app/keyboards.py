@@ -37,13 +37,14 @@ admin_kb = ReplyKeyboardMarkup(keyboard=[
      KeyboardButton(text='❌ Удалить администратора')]
 ],
                                resize_keyboard=True
-                               )
+                               )      
 
 
 main_menu_kb = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='📚 Выбрать предмет'), KeyboardButton(text='📖 Изучить темы')],
     [KeyboardButton(text='✏️ Сдать тест'), KeyboardButton(text='📊 Моя статистика')],
-    [KeyboardButton(text='🎯 Слабые места'), KeyboardButton(text='⭐ Мой рейтинг')]
+    [KeyboardButton(text='🎯 Слабые места'), KeyboardButton(text='⭐ Мой рейтинг')],
+    [KeyboardButton(text='🌐 Открыть веб-приложение', web_app={'url': 'https://imts.lovable.app'})]
 ],
                                     resize_keyboard=True
                                     )
@@ -147,6 +148,15 @@ async def get_theme_back_kb():
     """Клавиатура с кнопкой 'Назад' для просмотра темы"""
     keyboard = InlineKeyboardBuilder()
     keyboard.add(InlineKeyboardButton(text='← Назад к темам', callback_data='back_to_menu'))
+    return keyboard.adjust(1).as_markup()
+
+
+async def get_users_kb():
+    """Клавиатура для выбора пользователя (админ-панель)"""
+    keyboard = InlineKeyboardBuilder()
+    users = await rq.get_users()
+    for user in users:
+        keyboard.add(InlineKeyboardButton(text=user.name, callback_data=f'user_{user.tg_id}'))
     return keyboard.adjust(1).as_markup()
 
 

@@ -3,7 +3,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs
 
 
-engine = create_async_engine(url='sqlite+aiosqlite:///yandex.db')
+engine = create_async_engine(url='postgresql+asyncpg://postgres:admin@127.0.0.1:5432/doppibot', echo=True)
 async_session = async_sessionmaker(engine)
 
 
@@ -30,6 +30,7 @@ class Admin(Base):
     
     id: Mapped[int] = mapped_column(primary_key=True)
     tg_id = mapped_column(BigInteger)
+    name: Mapped[str] = mapped_column(String(50), nullable=True)
     
 
 class Subject(Base):

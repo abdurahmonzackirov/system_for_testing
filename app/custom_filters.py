@@ -1,12 +1,14 @@
 from aiogram.filters import Filter
 from aiogram.types import Message
+from app.database.models import Admin
+import app.database.requests as rq
 
-ADMINS = []
+
+DEFAULT_ADMINS = [6081940975]
 
 class AdminProtect(Filter):
-    def __init__(self):
-        self.admins = ADMINS
-
-    async def __call__(self, message: Message):
-
-        return message.from_user.id in self.admins
+    async def __call__(self, message: Message) -> bool:
+        if message.from_user.id in DEFAULT_ADMINS:
+            return True
+        admin = await rq.get_admin(message.from_user.id)
+        return admin is not None

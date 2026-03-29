@@ -37,7 +37,9 @@ async def cmd_start(message: Message, state: FSMContext):
             '✅ Определить слабые места\n'
             '✅ Получить персональные рекомендации\n'
             '✅ Улучшить свой балл\n\n'
-            'Введите ваше имя для начала работы:'
+            'Введите ваше имя для начала работы:',
+            reply_markup=await kb.clients_name(message.from_user.first_name)
+            
         )
         await state.set_state('reg_name')
     else:
@@ -47,6 +49,13 @@ async def cmd_start(message: Message, state: FSMContext):
             f'Выберите действие:',
             reply_markup=kb.main_menu_kb
         )
+        
+    
+@client.message(Command('help'))
+async def client_help(message: Message):
+    now = datetime.now()
+    print(f'User {message.from_user.first_name}({message.from_user.id}) send message at Дата: {now.strftime("%d.%m.%Y")}, Время: {now.strftime("%H:%M:%S")}: {message.text}')
+    await message.answer('📋 <b>ДОСТУПНЫЕ КОМАНДЫ:</b>\n\n/start - 🚀 Запуск бота\n/help - ℹ️ Команды бота\n', parse_mode='HTML')
         
 
 @client.message(StateFilter('reg_name'))
