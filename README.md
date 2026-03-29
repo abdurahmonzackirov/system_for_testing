@@ -30,7 +30,8 @@
 
 ```bash
 Python 3.8+
-SQLite3
+PostgreSQL 17
+pgAdmin 4
 pip
 ```
 
@@ -38,7 +39,7 @@ pip
 
 1. **Клонируйте репозиторий:**
 ```bash
-git clone https://github.com/yourusername/education-testing-bot.git
+git clone https://github.com/abdurahmonzackirov/system-for-testing.git
 cd education-testing-bot
 ```
 
